@@ -1,10 +1,10 @@
-## Metaprogramming in C++14 and beyond
+## Fun with [Boost.Hana][]
 
-This repository contains my [reveal.js][]-based presentation on metaprogramming
-for the [ACCU 2017][] conference.
+This repository contains my [reveal.js][]-based presentation on Hana for the
+[C++Now 2017][] conference.
 
 ## Basic usage
-Go to https://ldionne.com/accu-2017-metaprogramming-in-cpp14 or open
+Go to https://ldionne.com/cppnow-2017-fun-with-boost-hana or open
 `index.html` with your browser (does not work in Chrome). The slides
 are also available as a pdf in `slides.pdf`.
 
@@ -26,5 +26,6 @@ cmake --build build
 ```
 
 <!-- Links -->
-[ACCU 2017]: https://conference.accu.org/site/stories/2017/schedule.html
+[C++Now 2017]: http://cppnow.org
+[Boost.Hana]: https://github.com/boostorg/hana
 [reveal.js]: https://github.com/hakimel/reveal.js
