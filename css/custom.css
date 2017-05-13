@@ -3,6 +3,11 @@
     text-transform: none;
 }
 
+/* Default font size is too large to show reasonable amounts of code. */
+.reveal {
+  font-size: 36px;
+}
+
 /* Allow code boxes to be longer */
 .reveal pre code {
     max-height: 550px;
