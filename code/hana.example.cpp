@@ -14,10 +14,14 @@ int main() {
 // sample(mpl)
 auto Types = hana::tuple_t<int, void, char, long, void>;
 
-auto NoVoid = hana::remove_if(Types, hana::traits::is_void);
+auto NoVoid = hana::remove_if(Types, [](auto t) {
+  return hana::traits::is_void(t);
+});
 // -> hana::tuple_t<int, char, long>
 
-auto Ptrs = hana::transform(Types, hana::traits::add_pointer);
+auto Ptrs = hana::transform(Types, [](auto t) {
+  return hana::traits::add_pointer(t);
+});
 // -> hana::tuple_t<int*, void*, char*, long*, void*>
 // end-sample
 
