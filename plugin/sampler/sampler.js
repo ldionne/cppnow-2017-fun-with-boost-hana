@@ -7,7 +7,7 @@
  *
  *
  * Author: Louis Dionne
- * License: sampler.js is placed in the public domain
+ * License: MIT (see https://github.com/ldionne/reveal-sampler/blob/master/LICENSE.md)
  */
 
 (function() {
@@ -41,6 +41,10 @@
                     sample = (sample || "") + match[1];
                 }
             }
+
+            // Strip trailing newline in the sample (if any), since that is
+            // only required to insert the 'end-sample' tag.
+            sample = sample.replace(/\n$/, "");
 
             if (sample === null) {
                 throw "Could not find sample '" + sampleName + "' in file '" + file + "'.";
