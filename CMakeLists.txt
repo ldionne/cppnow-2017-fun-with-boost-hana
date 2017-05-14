@@ -52,7 +52,37 @@ ExternalProject_Add(install-Metal EXCLUDE_FROM_ALL 1
 ExternalProject_Get_Property(install-Metal SOURCE_DIR)
 include_directories(${SOURCE_DIR}/include)
 
-add_custom_target(install-dependencies DEPENDS install-Hana install-Brigand install-Metal)
+include(ExternalProject)
+ExternalProject_Add(install-CallableTraits EXCLUDE_FROM_ALL 1
+    URL https://github.com/badair/callable_traits/archive/master.zip
+    TIMEOUT 120
+    PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dependencies/callable_traits"
+    CONFIGURE_COMMAND "" # Disable configure step
+    BUILD_COMMAND ""     # Disable build step
+    INSTALL_COMMAND ""   # Disable install step
+    TEST_COMMAND ""      # Disable test step
+    UPDATE_COMMAND ""    # Disable source work-tree update
+)
+ExternalProject_Get_Property(install-CallableTraits SOURCE_DIR)
+include_directories(${SOURCE_DIR}/include)
+
+include(ExternalProject)
+ExternalProject_Add(install-Dyno EXCLUDE_FROM_ALL 1
+    URL https://github.com/ldionne/dyno/archive/master.zip
+    TIMEOUT 120
+    PREFIX "${CMAKE_CURRENT_BINARY_DIR}/dependencies/dyno"
+    CONFIGURE_COMMAND "" # Disable configure step
+    BUILD_COMMAND ""     # Disable build step
+    INSTALL_COMMAND ""   # Disable install step
+    TEST_COMMAND ""      # Disable test step
+    UPDATE_COMMAND ""    # Disable source work-tree update
+)
+ExternalProject_Get_Property(install-Dyno SOURCE_DIR)
+include_directories(${SOURCE_DIR}/include)
+
+add_custom_target(install-dependencies DEPENDS install-Hana install-Brigand
+                                               install-Metal install-CallableTraits
+                                               install-Dyno)
 
 
 #=============================================================================
