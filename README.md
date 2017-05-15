@@ -4,7 +4,7 @@ This repository contains my [reveal.js][]-based presentation on Hana for the
 [C++Now 2017][] conference.
 
 ## Basic usage
-Go to https://ldionne.com/cppnow-2017-fun-with-boost-hana or open
+Go to http://ldionne.com/cppnow-2017-fun-with-boost-hana or open
 `index.html` with your browser (does not work in Chrome). The slides
 are also available as a pdf in `slides.pdf`.
 
