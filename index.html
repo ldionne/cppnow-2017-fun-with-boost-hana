@@ -466,7 +466,7 @@ struct HasArea : decltype(dyno::requires(
 ```c++
 template <typename ...Clauses>
 struct concept {
-  // hold your breath for now
+  hana::tuple<Clauses...> clauses;
 };
 
 template <typename ...Clauses>
@@ -500,9 +500,17 @@ struct HasArea : concept<
 
 ### We have a description of the interface
 
+<pre><code class='sample line-numbers' data-highlight-lines="5-7" sample='code/dyno.has_area.cpp#definition'></code></pre>
+
 ----
 
-### Let's implement that interface
+### Now we need the implementation of the interface
+
+<pre><code class='sample line-numbers' data-highlight-lines="9-14" sample='code/dyno.has_area.cpp#definition'></code></pre>
+
+----
+
+### This is easy!
 
 ```c++
 template <>
@@ -515,9 +523,12 @@ auto dyno::concept_map<HasArea, Circle> = dyno::make_concept_map(
 
 ```c++
 template <typename ...Name, typename ...Function>
-constexpr auto make_concept_map(hana::pair<Name, Function> ...mappings) {
+auto make_concept_map(hana::pair<Name, Function> ...mappings) {
   return hana::make_map(mappings...);
 }
+
+template <typename Concept, typename Model>
+auto concept_map = make_concept_map();
 ```
 
 ----
@@ -561,14 +572,13 @@ auto dyno::concept_map<HasArea, Circle> = hana::make_map(
 
 ----
 
-### We have
-- a description of the interface
-- a map to fill that interface
+### We have the interface and the implementation
+
+<pre><code class='sample line-numbers' data-highlight-lines="5-7,9-14" sample='code/dyno.has_area.cpp#definition'></code></pre>
 
 ----
 
 ### We must bind the two together
-Have you wondered what happens here?
 
 ```c++
 void print_area(dyno::poly<HasArea> shape) {
@@ -581,6 +591,14 @@ int main() {
   print_area(c); // <= how does that compile?
 }
 ```
+
+----
+
+### This is where the computational part of Hana is useful
+
+----
+
+<img src="img/aspen-double-diamond.jpg" alt="Warning; it goes downhil from here!"/>
 
 ----
 
@@ -604,31 +622,69 @@ struct poly {
 
 private:
   void* self_; // simplification
-  Concept vtable_;
+  vtable<Concept> vtable_;
 };
 ```
 
 ----
 
-### Let the magic happen
+### Creating our own vtable
 
 ```c++
-template <typename ...Name, typename ...Signature>
-struct concept<hana::pair<Name, hana::basic_type<Signature>>...> {
-  // input: signature like `double (dyno::T const&)`
-  // output: signature like `double (void const*)`
-  hana::map<hana::pair<Name, erase_signature_t<Signature>*>...> vtbl_;
+template <typename Concept>
+class vtable {
+  using Map = typename decltype(vtable_layout(Concept{}))::type;
+  Map map_;
 
+public:
   template <typename ConceptMap>
-  constexpr explicit concept(ConceptMap map)
-    : vtbl_{
-      hana::make_pair(
-        Name{},
-        erase_function<Signature>(map[Name{}])
-      )...
-    }
+  explicit vtable(ConceptMap map)
+    : map_{erase_concept_map(map)}
   { }
 };
+```
+
+----
+
+Step 1: Determine the vtable layout
+
+```c++
+template <typename Concept>
+auto vtable_layout(Concept c) {
+  auto erased = hana::transform(c.clauses,
+    hana::fuse([](auto name, auto sig) {
+      using Signature = typename decltype(sig)::type;
+
+      // 'double (dyno::T const&)' -> 'double (void const*)'
+      using Erased = erase_signature_t<Signature>;
+
+      return hana::type<hana::pair<decltype(name), Erased*>>{};
+    }));
+
+  // 'erased' is a 'tuple<type<pair<Name, Signature*>>...>'
+  // we return a 'type<map<pair<Name, Signature*>...>>'
+  return hana::unpack(erased, hana::template_<hana::map>);
+}
+```
+
+----
+
+Step 2: Erase incoming concept maps
+
+```c++
+template <typename ConceptMap>
+auto erase_concept_map(ConceptMap map) {
+  auto erased = hana::transform(c.clauses,
+    hana::fuse([&](auto name, auto sig) {
+      using Signature = typename decltype(sig)::type;
+      return hana::make_pair(
+        name, erase_function<Signature>(map[name])
+      );
+    }));
+
+  // 'erased' is a 'tuple<pair<Name, Signature*>>'
+  return hana::to_map(erased);
+}
 ```
 
 ----
@@ -665,10 +721,126 @@ constexpr auto erase_function(F const&) {
 
 ----
 
+### Supporting refinements
+
+```c++
+template <typename Reference>
+struct Iterator : decltype(dyno::requires(
+  dyno::CopyConstructible{},
+  dyno::CopyAssignable{},
+  dyno::Destructible{},
+  dyno::Swappable{},
+  "increment"_s = dyno::function<void (dyno::T&)>,
+  "dereference"_s = dyno::function<Reference (dyno::T&)>
+)) { };
+```
+
+----
+
+Step 1: Take refined concepts into account for vtable layout
+
+```c++
+template <typename Concept>
+auto vtable_layout(Concept c) {
+  auto erased = hana::transform(all_clauses(c),
+//                              ^^^^^^^^^^^^^^
+    hana::fuse([](auto name, auto sig) {
+      ...
+    }));
+
+  ...
+  return hana::unpack(erased, hana::template_<hana::map>);
+}
+```
+
+----
+
+Step 1.1: Implementing `all_clauses`
+
+```c++
+template <typename ...Clauses>
+struct concept : concept_base { ... };
+//               ^^^^^^^^^^^^
+
+template <typename Clause>
+constexpr auto is_concept(Clause const&) {
+  return std::is_base_of<concept_base, Clause>{};
+}
+
+template <typename Concept>
+auto all_clauses(Concept c) {
+  auto expanded = hana::transform(c.clauses, [](auto c) {
+    if constexpr (is_concept(c)) {
+      return all_clauses(c);
+    } else {
+      return hana::make_tuple(c);
+    }
+  });
+  return hana::flatten(expanded);
+}
+```
+
+----
+
+Step 2: Take refined maps into account when filling the vtable
+
+```c++
+template <typename Concept>
+struct poly {
+  template <typename T>
+  poly(T t)
+    : self_{new T{t}}
+    , vtable_{
+        dyno::complete_concept_map<T>(
+//      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+          Concept{},
+          dyno::concept_map<Concept, T>
+        )
+      }
+  { }
+};
+```
+
+----
+
+Step 2.1: Implementing concept map completion
+
+```c++
+// For each refined concept, recursively complete the concept map for
+// that Concept and merge that into the current concept map.
+template <typename T, typename Concept, typename ConceptMap>
+auto complete_concept_map(Concept c, ConceptMap map) {
+  auto refined_concepts = hana::filter(c.clauses, is_concept);
+  auto merged = hana::fold_left(refined_concepts, map,
+    [](auto m, auto refined) {
+      using Refined = typename decltype(refined)::type;
+      auto refined_map = dyno::concept_map<Refined, T>;
+      auto complete = complete_concept_map<T>(refined, refined_map);
+      return hana::union_(complete, m);
+    });
+
+  return merged;
+}
+```
+
+----
+
 ### Congratulations, you just did a compiler's job
 
 Note:
 The real implementation supports default concept maps and refined concepts
+
+----
+
+### And the results?
+
+<pre><code class='sample' sample='code/dyno.function.cpp#Callable'></code></pre>
+
+----
+
+### Continued
+
+<pre><code class='sample' sample='code/dyno.function.cpp#function'></code></pre>
 
 ====================
 
