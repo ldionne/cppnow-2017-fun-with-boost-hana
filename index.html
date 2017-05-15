@@ -412,25 +412,7 @@ struct HasArea : decltype(dyno::requires(
 )) { };
 ```
 
-```c++
-template <typename Signature>
-constexpr hana::basic_type<Signature> function{};
-
-struct T;
-
-template <char ...c>
-struct string {
-  template <typename Signature>
-  constexpr hana::pair<string<c...>, Signature> operator=(Signature) const {
-    return {};
-  }
-};
-
-template <typename CharT, CharT ...c>
-constexpr string<c...> operator""_s() {
-  return {};
-}
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#dsl'></code></pre>
 
 ----
 
@@ -463,17 +445,7 @@ struct HasArea : decltype(dyno::requires(
 )) { };
 ```
 
-```c++
-template <typename ...Clauses>
-struct concept {
-  hana::tuple<Clauses...> clauses;
-};
-
-template <typename ...Clauses>
-constexpr concept<Clauses...> requires(Clauses ...) {
-  return {};
-}
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#concept'></code></pre>
 
 ----
 
@@ -521,29 +493,13 @@ auto dyno::concept_map<HasArea, Circle> = dyno::make_concept_map(
 );
 ```
 
-```c++
-template <typename ...Name, typename ...Function>
-auto make_concept_map(hana::pair<Name, Function> ...mappings) {
-  return hana::make_map(mappings...);
-}
-
-template <typename Concept, typename Model>
-auto concept_map = make_concept_map();
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#concept_map'></code></pre>
 
 ----
 
 ### Remember
 
-```c++
-template <char ...c>
-struct string {
-  template <typename Signature>
-  constexpr hana::pair<string<c...>, Signature> operator=(Signature) const {
-    return {};
-  }
-};
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#string'></code></pre>
 
 ----
 
@@ -598,94 +554,33 @@ int main() {
 
 ----
 
+### It goes downhill from here
+
 <img src="img/aspen-double-diamond.jpg" alt="Warning; it goes downhil from here!"/>
 
 ----
 
 ### Diving deeper into `poly`
 
-```c++
-template <typename Concept>
-struct poly {
-  template <typename T>
-  poly(T t)
-    : self_{new T{t}}
-    , vtable_{dyno::concept_map<Concept, T>} // <= interesting stuff here
-  { }
-
-  template <typename F>
-  auto operator->*(F f) {
-    return [=](auto ...args) {
-      return vtable_[f](self_, args...);
-    };
-  }
-
-private:
-  void* self_; // simplification
-  vtable<Concept> vtable_;
-};
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#poly'></code></pre>
 
 ----
 
 ### Creating our own vtable
 
-```c++
-template <typename Concept>
-class vtable {
-  using Map = typename decltype(vtable_layout(Concept{}))::type;
-  Map map_;
-
-public:
-  template <typename ConceptMap>
-  explicit vtable(ConceptMap map)
-    : map_{erase_concept_map(map)}
-  { }
-};
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#vtable'></code></pre>
 
 ----
 
 Step 1: Determine the vtable layout
 
-```c++
-template <typename Concept>
-auto vtable_layout(Concept c) {
-  auto erased = hana::transform(c.clauses,
-    hana::fuse([](auto name, auto sig) {
-      using Signature = typename decltype(sig)::type;
-
-      // 'double (dyno::T const&)' -> 'double (void const*)'
-      using Erased = erase_signature_t<Signature>;
-
-      return hana::type<hana::pair<decltype(name), Erased*>>{};
-    }));
-
-  // 'erased' is a 'tuple<type<pair<Name, Signature*>>...>'
-  // we return a 'type<map<pair<Name, Signature*>...>>'
-  return hana::unpack(erased, hana::template_<hana::map>);
-}
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#vtable_layout'></code></pre>
 
 ----
 
 Step 2: Erase incoming concept maps
 
-```c++
-template <typename ConceptMap>
-auto erase_concept_map(ConceptMap map) {
-  auto erased = hana::transform(c.clauses,
-    hana::fuse([&](auto name, auto sig) {
-      using Signature = typename decltype(sig)::type;
-      return hana::make_pair(
-        name, erase_function<Signature>(map[name])
-      );
-    }));
-
-  // 'erased' is a 'tuple<pair<Name, Signature*>>'
-  return hana::to_map(erased);
-}
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#erase_concept_map'></code></pre>
 
 ----
 
