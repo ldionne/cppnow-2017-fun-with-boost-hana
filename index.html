@@ -407,8 +407,8 @@ fn main() {
 ### Let's take it step by step
 
 ```c++
-struct HasArea : decltype(dyno::requires(
-  "area"_s = dyno::function<double (dyno::T const&)>
+struct HasArea : decltype(requires(
+  "area"_s = function<double (T const&)>
 )) { };
 ```
 
@@ -419,18 +419,18 @@ struct HasArea : decltype(dyno::requires(
 ### In other words
 
 ```c++
-struct HasArea : decltype(dyno::requires(
-  "area"_s = dyno::function<double (dyno::T const&)>
+struct HasArea : decltype(requires(
+  "area"_s = function<double (T const&)>
 )) { };
 ```
 
 is equivalent to
 
 ```c++
-struct HasArea : decltype(dyno::requires(
+struct HasArea : decltype(requires(
   hana::pair<
     string<'a', 'r', 'e', 'a'>,
-    hana::basic_type<double (dyno::T const&)>
+    hana::basic_type<double (T const&)>
   >{}
 )) { };
 ```
@@ -440,8 +440,8 @@ struct HasArea : decltype(dyno::requires(
 ### What about `requires`?
 
 ```c++
-struct HasArea : decltype(dyno::requires(
-  "area"_s = dyno::function<double (dyno::T const&)>
+struct HasArea : decltype(requires(
+  "area"_s = function<double (T const&)>
 )) { };
 ```
 
@@ -452,8 +452,8 @@ struct HasArea : decltype(dyno::requires(
 ### In other words
 
 ```c++
-struct HasArea : decltype(dyno::requires(
-  "area"_s = dyno::function<double (dyno::T const&)>
+struct HasArea : decltype(requires(
+  "area"_s = function<double (T const&)>
 )) { };
 ```
 
@@ -463,7 +463,7 @@ is equivalent to
 struct HasArea : concept<
   hana::pair<
     string<'a', 'r', 'e', 'a'>,
-    hana::basic_type<double (dyno::T const&)>
+    hana::basic_type<double (T const&)>
   >
 > { };
 ```
@@ -486,7 +486,7 @@ struct HasArea : concept<
 
 ```c++
 template <>
-auto dyno::concept_map<HasArea, Circle> = dyno::make_concept_map(
+auto concept_map<HasArea, Circle> = make_concept_map(
   "area"_s = [](Circle const& self) -> double {
     return 3.1415 * (self.radius * self.radius);
   }
@@ -507,7 +507,7 @@ auto dyno::concept_map<HasArea, Circle> = dyno::make_concept_map(
 
 ```c++
 template <>
-auto dyno::concept_map<HasArea, Circle> = dyno::make_concept_map(
+auto concept_map<HasArea, Circle> = make_concept_map(
   "area"_s = [](Circle const& self) -> double {
     return 3.1415 * (self.radius * self.radius);
   }
@@ -518,7 +518,7 @@ is equivalent to
 
 ```c++
 template <>
-auto dyno::concept_map<HasArea, Circle> = hana::make_map(
+auto concept_map<HasArea, Circle> = hana::make_map(
   hana::make_pair(
     "area"_s,
     [](Circle const& self) { ... }
@@ -537,7 +537,7 @@ auto dyno::concept_map<HasArea, Circle> = hana::make_map(
 ### We must bind the two together
 
 ```c++
-void print_area(dyno::poly<HasArea> shape) {
+void print_area(poly<HasArea> shape) {
   std::cout << "This shape has an area of " << shape->*"area"_s();
 }
 
@@ -620,13 +620,13 @@ constexpr auto erase_function(F const&) {
 
 ```c++
 template <typename Reference>
-struct Iterator : decltype(dyno::requires(
-  dyno::CopyConstructible{},
-  dyno::CopyAssignable{},
-  dyno::Destructible{},
-  dyno::Swappable{},
-  "increment"_s = dyno::function<void (dyno::T&)>,
-  "dereference"_s = dyno::function<Reference (dyno::T&)>
+struct Iterator : decltype(requires(
+  CopyConstructible{},
+  CopyAssignable{},
+  Destructible{},
+  Swappable{},
+  "increment"_s = function<void (T&)>,
+  "dereference"_s = function<Reference (T&)>
 )) { };
 ```
 
@@ -686,10 +686,10 @@ struct poly {
   poly(T t)
     : self_{new T{t}}
     , vtable_{
-        dyno::complete_concept_map<T>(
-//      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        complete_concept_map<T>(
+//      ^^^^^^^^^^^^^^^^^^^^^^^
           Concept{},
-          dyno::concept_map<Concept, T>
+          concept_map<Concept, T>
         )
       }
   { }
@@ -709,7 +709,7 @@ auto complete_concept_map(Concept c, ConceptMap map) {
   auto merged = hana::fold_left(refined_concepts, map,
     [](auto m, auto refined) {
       using Refined = typename decltype(refined)::type;
-      auto refined_map = dyno::concept_map<Refined, T>;
+      auto refined_map = concept_map<Refined, T>;
       auto complete = complete_concept_map<T>(refined, refined_map);
       return hana::union_(complete, m);
     });
