@@ -181,6 +181,7 @@ private:
 // end-sample
 
 
+// sample(HasArea)
 struct Circle {
   double x, y, radius;
 };
@@ -195,7 +196,9 @@ auto concept_map<HasArea, Circle> = make_concept_map(
     return 3.1415 * (self.radius * self.radius);
   }
 );
+// end-sample
 
+// sample(usage)
 void print_area(poly<HasArea> shape) {
   std::cout << "This shape has an area of " << (shape->*"area"_s)();
 }
@@ -209,3 +212,4 @@ int main() {
 
   print_area(c);
 }
+// end-sample

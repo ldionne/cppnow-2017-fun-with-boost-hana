@@ -368,13 +368,13 @@ fn main() {
 
 ### Let's do that in C++
 
-<pre><code class='sample' sample='code/dyno.has_area.cpp#definition'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
 ----
 
 ### Usage
 
-<pre><code class='sample' sample='code/dyno.has_area.cpp#usage'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#usage'></code></pre>
 
 ----
 
@@ -472,13 +472,13 @@ struct HasArea : concept<
 
 ### We have a description of the interface
 
-<pre><code class='sample line-numbers' data-highlight-lines="5-7" sample='code/dyno.has_area.cpp#definition'></code></pre>
+<pre><code class='sample line-numbers' data-highlight-lines="5-7" sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
 ----
 
 ### Now we need the implementation of the interface
 
-<pre><code class='sample line-numbers' data-highlight-lines="9-14" sample='code/dyno.has_area.cpp#definition'></code></pre>
+<pre><code class='sample line-numbers' data-highlight-lines="9-14" sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
 ----
 
@@ -530,7 +530,7 @@ auto dyno::concept_map<HasArea, Circle> = hana::make_map(
 
 ### We have the interface and the implementation
 
-<pre><code class='sample line-numbers' data-highlight-lines="5-7,9-14" sample='code/dyno.has_area.cpp#definition'></code></pre>
+<pre><code class='sample line-numbers' data-highlight-lines="5-7,9-14" sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
 ----
 
