@@ -536,17 +536,7 @@ auto concept_map<HasArea, Circle> = hana::make_map(
 
 ### We must bind the two together
 
-```c++
-void print_area(poly<HasArea> shape) {
-  std::cout << "This shape has an area of " << shape->*"area"_s();
-}
-
-int main() {
-  Circle c = {0.0, 0.0, 1.0};
-
-  print_area(c); // <= how does that compile?
-}
-```
+<pre><code class='sample line-numbers' data-highlight-lines="1,12" sample='code/dyno.from_scratch.cpp#usage'></code></pre>
 
 ----
 
@@ -554,7 +544,7 @@ int main() {
 
 ----
 
-### It goes downhill from here
+### Careful: It goes downhill from here
 
 <img src="img/aspen-double-diamond.jpg" alt="Warning; it goes downhil from here!"/>
 
@@ -763,7 +753,6 @@ struct Person {
   );
 };
 ```
-
 
 (non-intrusive version is `BOOST_HANA_ADAPT_STRUCT`)
 
