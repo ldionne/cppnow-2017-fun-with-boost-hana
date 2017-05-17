@@ -314,7 +314,7 @@ fn main() {
 
 ### Let's do that in C++
 
-<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#definition'></code></pre>
 
 ----
 
@@ -352,11 +352,7 @@ fn main() {
 
 ### Let's take it step by step
 
-```c++
-struct HasArea : decltype(requires(
-  "area"_s = function<double (T const&)>
-)) { };
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
 <pre><code class='sample' sample='code/dyno.from_scratch.cpp#dsl'></code></pre>
 
@@ -364,82 +360,63 @@ struct HasArea : decltype(requires(
 
 ### In other words
 
-```c++
-struct HasArea : decltype(requires(
-  "area"_s = function<double (T const&)>
-)) { };
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
 is equivalent to
 
 ```c++
-struct HasArea : decltype(requires(
+struct HasArea : decltype(trait(
   hana::pair<
     string<'a', 'r', 'e', 'a'>,
-    hana::basic_type<double (T const&)>
+    hana::basic_type<double (self const&)>
   >{}
 )) { };
 ```
 
 ----
 
-### What about `requires`?
+### What about `trait`?
 
-```c++
-struct HasArea : decltype(requires(
-  "area"_s = function<double (T const&)>
-)) { };
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
-<pre><code class='sample' sample='code/dyno.from_scratch.cpp#concept'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#trait'></code></pre>
 
 ----
 
 ### In other words
 
-```c++
-struct HasArea : decltype(requires(
-  "area"_s = function<double (T const&)>
-)) { };
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
 
 is equivalent to
 
 ```c++
-struct HasArea : concept<
+struct HasArea : trait_t<
   hana::pair<
     string<'a', 'r', 'e', 'a'>,
-    hana::basic_type<double (T const&)>
+    hana::basic_type<double (self const&)>
   >
 > { };
 ```
 
 ----
 
-### We have a description of the interface
+### We have a description of the trait
 
-<pre><code class='sample line-numbers' data-highlight-lines="5-7" sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
+<pre><code class='sample line-numbers' data-highlight-lines="5-7" sample='code/dyno.from_scratch.cpp#definition'></code></pre>
 
 ----
 
-### Now we need the implementation of the interface
+### Now we need the implementation of the trait
 
-<pre><code class='sample line-numbers' data-highlight-lines="9-14" sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
+<pre><code class='sample line-numbers' data-highlight-lines="9-14" sample='code/dyno.from_scratch.cpp#definition'></code></pre>
 
 ----
 
 ### This is easy!
 
-```c++
-template <>
-auto concept_map<HasArea, Circle> = make_concept_map(
-  "area"_s = [](Circle const& self) -> double {
-    return 3.1415 * (self.radius * self.radius);
-  }
-);
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea.Circle'></code></pre>
 
-<pre><code class='sample' sample='code/dyno.from_scratch.cpp#concept_map'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#impl'></code></pre>
 
 ----
 
@@ -451,20 +428,13 @@ auto concept_map<HasArea, Circle> = make_concept_map(
 
 ### In other words
 
-```c++
-template <>
-auto concept_map<HasArea, Circle> = make_concept_map(
-  "area"_s = [](Circle const& self) -> double {
-    return 3.1415 * (self.radius * self.radius);
-  }
-);
-```
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#HasArea.Circle'></code></pre>
 
 is equivalent to
 
 ```c++
 template <>
-auto concept_map<HasArea, Circle> = hana::make_map(
+auto impl<HasArea, Circle> = hana::make_map(
   hana::make_pair(
     "area"_s,
     [](Circle const& self) { ... }
@@ -476,7 +446,7 @@ auto concept_map<HasArea, Circle> = hana::make_map(
 
 ### We have the interface and the implementation
 
-<pre><code class='sample line-numbers' data-highlight-lines="5-7,9-14" sample='code/dyno.from_scratch.cpp#HasArea'></code></pre>
+<pre><code class='sample line-numbers' data-highlight-lines="5-7,9-14" sample='code/dyno.from_scratch.cpp#definition'></code></pre>
 
 ----
 
@@ -514,9 +484,9 @@ Step 1: Determine the vtable layout
 
 ----
 
-Step 2: Erase incoming concept maps
+Step 2: Erase incoming `impl`s
 
-<pre><code class='sample' sample='code/dyno.from_scratch.cpp#erase_concept_map'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#erase_impl'></code></pre>
 
 ----
 
@@ -556,24 +526,24 @@ constexpr auto erase_function(F const&) {
 
 ```c++
 template <typename Reference>
-struct Iterator : decltype(requires(
+struct Iterator : decltype(trait(
   CopyConstructible{},
   CopyAssignable{},
   Destructible{},
   Swappable{},
-  "increment"_s = function<void (T&)>,
-  "dereference"_s = function<Reference (T&)>
+  "increment"_s = function<void (self&)>,
+  "dereference"_s = function<Reference (self&)>
 )) { };
 ```
 
 ----
 
-Step 1: Take refined concepts into account for vtable layout
+Step 1: Take refined traits into account for vtable layout
 
 ```c++
-template <typename Concept>
-auto vtable_layout(Concept c) {
-  auto erased = hana::transform(all_clauses(c),
+template <typename Trait>
+auto vtable_layout(Trait t) {
+  auto erased = hana::transform(all_methods(t),
 //                              ^^^^^^^^^^^^^^
     hana::fuse([](auto name, auto sig) {
       ...
@@ -586,25 +556,25 @@ auto vtable_layout(Concept c) {
 
 ----
 
-Step 1.1: Implementing `all_clauses`
+Step 1.1: Implementing `all_methods`
 
 ```c++
-template <typename ...Clauses>
-struct concept : concept_base { ... };
-//               ^^^^^^^^^^^^
+template <typename ...Methods>
+struct trait_t : trait_base { ... };
+//               ^^^^^^^^^^
 
-template <typename Clause>
-constexpr auto is_concept(Clause const&) {
-  return std::is_base_of<concept_base, Clause>{};
+template <typename X>
+constexpr auto is_trait(X const&) {
+  return std::is_base_of<trait_base, X>{};
 }
 
-template <typename Concept>
-auto all_clauses(Concept c) {
-  auto expanded = hana::transform(c.clauses, [](auto c) {
-    if constexpr (is_concept(c)) {
-      return all_clauses(c);
+template <typename Trait>
+auto all_methods(Trait t) {
+  auto expanded = hana::transform(t.methods, [](auto m) {
+    if constexpr (is_trait(m)) {
+      return all_methods(m);
     } else {
-      return hana::make_tuple(c);
+      return hana::make_tuple(m);
     }
   });
   return hana::flatten(expanded);
@@ -613,20 +583,17 @@ auto all_clauses(Concept c) {
 
 ----
 
-Step 2: Take refined maps into account when filling the vtable
+Step 2: Take refined `impl`s into account when filling the vtable
 
 ```c++
-template <typename Concept>
+template <typename Trait>
 struct poly {
   template <typename T>
   poly(T t)
     : self_{new T{t}}
     , vtable_{
-        complete_concept_map<T>(
-//      ^^^^^^^^^^^^^^^^^^^^^^^
-          Concept{},
-          concept_map<Concept, T>
-        )
+        complete_impl<T>(Trait{}, impl<Trait, T>)
+//      ^^^^^^^^^^^^^^^^^^^^^^^^
       }
   { }
 };
@@ -634,20 +601,20 @@ struct poly {
 
 ----
 
-Step 2.1: Implementing concept map completion
+Step 2.1: Implementing `impl` completion
 
 ```c++
-// For each refined concept, recursively complete the concept map for
-// that Concept and merge that into the current concept map.
-template <typename T, typename Concept, typename ConceptMap>
-auto complete_concept_map(Concept c, ConceptMap map) {
-  auto refined_concepts = hana::filter(c.clauses, is_concept);
-  auto merged = hana::fold_left(refined_concepts, map,
-    [](auto m, auto refined) {
+// For each refined trait, recursively complete the impl
+// for that trait and merge that into the current impl.
+template <typename T, typename Trait, typename Impl>
+auto complete_impl(Trait t, Impl impl) {
+  auto refined_traits = hana::filter(t.methods, is_trait);
+  auto merged = hana::fold_left(refined_traits, impl,
+    [](auto full_impl, auto refined) {
       using Refined = typename decltype(refined)::type;
-      auto refined_map = concept_map<Refined, T>;
-      auto complete = complete_concept_map<T>(refined, refined_map);
-      return hana::union_(complete, m);
+      auto refined_impl = impl<Refined, T>;
+      auto complete = complete_impl<T>(refined, refined_impl);
+      return hana::union_(complete, full_impl);
     });
 
   return merged;
@@ -659,19 +626,19 @@ auto complete_concept_map(Concept c, ConceptMap map) {
 ### Congratulations, you just did a compiler's job
 
 Note:
-The real implementation supports default concept maps
+The real implementation supports default `impl`s
 
 ----
 
 ### And the results?
 
-<pre><code class='sample' sample='code/dyno.function.cpp#Callable'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#Callable'></code></pre>
 
 ----
 
-### Continued
+### `std::function`!
 
-<pre><code class='sample' sample='code/dyno.function.cpp#function'></code></pre>
+<pre><code class='sample' sample='code/dyno.from_scratch.cpp#std_function'></code></pre>
 
 ====================
 

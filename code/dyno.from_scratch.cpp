@@ -4,7 +4,12 @@
 
 #include <boost/hana.hpp>
 #include <dyno.hpp>
+
+#include <cassert>
+#include <functional>
 #include <iostream>
+#include <string>
+#include <utility>
 namespace hana = boost::hana;
 
 
@@ -18,7 +23,7 @@ namespace hana = boost::hana;
 template <typename Signature>
 constexpr hana::basic_type<Signature> function{};
 
-struct T;
+struct self;
 
 // end-sample sample(dsl) sample(string)
 template <char ...c>
@@ -62,45 +67,45 @@ namespace boost { namespace hana {
   };
 }} // end namespace boost::hana
 
-// sample(concept)
-template <typename ...Clauses>
-struct concept {
-  hana::tuple<Clauses...> clauses;
+// sample(trait)
+template <typename ...Methods>
+struct trait_t {
+  hana::tuple<Methods...> methods;
 };
 
-template <typename ...Clauses>
-constexpr concept<Clauses...> requires(Clauses ...) {
+template <typename ...Methods>
+constexpr trait_t<Methods...> trait(Methods ...) {
   return {};
 }
 // end-sample
 
 
-// sample(concept_map)
-template <typename ...Name, typename ...Function>
-auto make_concept_map(hana::pair<Name, Function> ...mappings) {
-  return hana::make_map(mappings...);
+// sample(impl)
+template <typename ...Name, typename ...Method>
+auto make_impl(hana::pair<Name, Method> ...m) {
+  return hana::make_map(m...);
 }
 
-template <typename Concept, typename Model>
-auto concept_map = make_concept_map();
+template <typename Trait, typename T>
+auto impl = make_impl();
 // end-sample
 
 
 template <typename Signature>
 using erase_signature_t = typename dyno::detail::erase_signature<
   typename dyno::detail::transform_signature<
-    Signature, dyno::detail::replace<::T, dyno::T>::template apply
+    Signature, dyno::detail::replace<::self, dyno::T>::template apply
   >::type
 >::type;
 
 // sample(vtable_layout)
-template <typename Concept>
-auto vtable_layout(Concept c) {
-  auto erased = hana::transform(c.clauses,
+template <typename Trait>
+auto vtable_layout(Trait t) {
+  auto erased = hana::transform(t.methods,
     hana::fuse([](auto name, auto sig) {
       using Signature = typename decltype(sig)::type;
 
-      // 'double (dyno::T const&)' -> 'double (void const*)'
+      // 'double (T const&)' -> 'double (void const*)'
       using Erased = erase_signature_t<Signature>;
 
       return hana::type<hana::pair<decltype(name), Erased*>>{};
@@ -116,19 +121,19 @@ auto vtable_layout(Concept c) {
 template <typename Signature, typename F>
 auto erase_function(F f) {
   using Sig2 = typename dyno::detail::transform_signature<
-    Signature, dyno::detail::replace<::T, dyno::T>::template apply
+    Signature, dyno::detail::replace<::self, dyno::T>::template apply
   >::type;
   return dyno::detail::erase_function<Sig2>(f);
 }
 
-// sample(erase_concept_map)
-template <typename Concept, typename ConceptMap>
-auto erase_concept_map(Concept c, ConceptMap map) {
-  auto erased = hana::transform(c.clauses,
+// sample(erase_impl)
+template <typename Trait, typename Impl>
+auto erase_impl(Trait t, Impl impl) {
+  auto erased = hana::transform(t.methods,
     hana::fuse([&](auto name, auto sig) {
       using Signature = typename decltype(sig)::type;
       return hana::make_pair(
-        name, erase_function<Signature>(map[name])
+        name, erase_function<Signature>(impl[name])
       );
     }));
 
@@ -139,15 +144,15 @@ auto erase_concept_map(Concept c, ConceptMap map) {
 
 
 // sample(vtable)
-template <typename Concept>
+template <typename Trait>
 class vtable {
-  using Map = typename decltype(vtable_layout(Concept{}))::type;
+  using Map = typename decltype(vtable_layout(Trait{}))::type;
   Map map_;
 
 public:
-  template <typename ConceptMap>
-  explicit vtable(ConceptMap map)
-    : map_{erase_concept_map(Concept{}, map)}
+  template <typename Impl>
+  explicit vtable(Impl impl)
+    : map_{erase_impl(Trait{}, impl)}
   { }
 
   template <typename F>
@@ -159,16 +164,16 @@ public:
 
 
 // sample(poly)
-template <typename Concept>
+template <typename Trait>
 struct poly {
   template <typename T>
   poly(T t)
     : self_{new T{t}}
-    , vtable_{concept_map<Concept, T>} // <= interesting stuff here
+    , vtable_{impl<Trait, T>} // <= interesting stuff here
   { }
 
   template <typename F>
-  auto operator->*(F f) {
+  auto operator->*(F f) const {
     return [=](auto ...args) {
       return vtable_[f](self_, args...);
     };
@@ -176,27 +181,68 @@ struct poly {
 
 private:
   void* self_; // simplification
-  vtable<Concept> vtable_;
+  vtable<Trait> vtable_;
 };
 // end-sample
 
 
-// sample(HasArea)
+// sample(definition)
 struct Circle {
   double x, y, radius;
 };
 
-struct HasArea : decltype(requires(
-  "area"_s = function<double (T const&)>
+// end-sample sample(definition) sample(HasArea)
+struct HasArea : decltype(trait(
+  "area"_s = function<double (self const&)>
 )) { };
+// end-sample sample(definition)
 
+// end-sample sample(definition) sample(HasArea.Circle)
 template <>
-auto concept_map<HasArea, Circle> = make_concept_map(
+auto impl<HasArea, Circle> = make_impl(
   "area"_s = [](Circle const& self) -> double {
     return 3.1415 * (self.radius * self.radius);
   }
 );
 // end-sample
+
+
+// sample(Callable)
+template <typename Signature>
+struct Callable;
+
+template <typename R, typename ...Args>
+struct Callable<R(Args...)> : decltype(trait(
+  "call"_s = function<R (self const&, Args...)>
+)) { };
+
+template <typename R, typename ...Args, typename F>
+auto const impl<Callable<R(Args...)>, F> = make_impl(
+  "call"_s = [](F const& f, Args ...args) -> R {
+    return f(std::forward<Args>(args)...);
+  }
+);
+// end-sample
+
+// sample(std_function)
+template <typename Signature>
+struct std_function;
+
+template <typename R, typename ...Args>
+struct std_function<R(Args...)> {
+  template <typename F = R(Args...)>
+  std_function(F&& f) : poly_{std::forward<F>(f)} { }
+
+  R operator()(Args ...args) const {
+    return (poly_->*"call"_s)(std::forward<Args>(args)...);
+  }
+
+private:
+  poly<Callable<R(Args...)>> poly_;
+};
+// end-sample
+
+
 
 // sample(usage)
 void print_area(poly<HasArea> shape) {
@@ -213,3 +259,13 @@ int main() {
   print_area(c);
 }
 // end-sample
+
+// Cheap way of running unit tests when program starts up
+static auto test_std_function = []{
+  std_function<std::string(int)> tostring = std::to_string;
+  assert(tostring(1) == "1");
+  assert(tostring(2) == "2");
+  assert(tostring(3) == "3");
+  assert(tostring(-10) == "-10");
+  return 0;
+}();
