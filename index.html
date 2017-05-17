@@ -213,20 +213,14 @@ static_assert(three == 3_c);
 
 ### Example: a simple event system
 
-<pre><code class='sample' sample='code/callbacks.std.unordered_map.cpp#usage'></code></pre>
+<pre><code class='sample' sample='code/callbacks.hana.hetero.cpp#usage'></code></pre>
 
 ----
 
-### What if
+### Assume
 
 - All events are known at compile-time
 - We always know what event to trigger at compile-time
-
-----
-
-### Could we do better?
-
-<pre><code class='sample' sample='code/callbacks.hana.cpp#usage'></code></pre>
 
 ----
 
@@ -242,76 +236,27 @@ static_assert(three == 3_c);
 
 ----
 
-### Runtime
-<pre><code class='sample' sample='code/callbacks.std.unordered_map.hpp#struct'></code></pre>
+### Constructing the map
 
-### Compile-time
-<pre><code class='sample' sample='code/callbacks.hana.hpp#struct'></code></pre>
+<pre><code class='sample' sample='code/callbacks.hana.hetero.cpp#constructor'></code></pre>
 
 ----
 
-### Runtime
-<pre><code class='sample' sample='code/callbacks.std.unordered_map.hpp#constructor'></code></pre>
+### Storing events
 
-### Compile-time
-<pre><code class='sample' sample='code/callbacks.hana.hpp#constructor'></code></pre>
+<pre><code class='sample' sample='code/callbacks.hana.hetero.cpp#struct'></code></pre>
 
 ----
 
-### Runtime
-<pre><code class='sample' sample='code/callbacks.std.unordered_map.hpp#on'></code></pre>
+### Registering events
 
-### Compile-time
-<pre><code class='sample' sample='code/callbacks.hana.hpp#on'></code></pre>
+<pre><code class='sample' sample='code/callbacks.hana.hetero.cpp#on'></code></pre>
 
 ----
 
-### Runtime
-<pre><code class='sample' sample='code/callbacks.std.unordered_map.hpp#trigger'></code></pre>
+### Triggering events
 
-### Compile-time
 <pre><code class='sample' sample='code/callbacks.hana.hpp#trigger'></code></pre>
-
-----
-
-### But does it actually matter?
-
-----
-
-### Compiled with `-O3 -flto`
-
-<iframe width="800" height="400" src="benchmark/callbacks.html" style="background-color: Snow;"></iframe>
-
-----
-
-### What if the event to trigger can be decided at runtime?
-
-<pre><code class='sample' sample='code/callbacks.hana.extensible.cpp#usage'></code></pre>
-
-----
-
-### First, maintain a dynamic map
-
-<pre><code class='sample' sample='code/callbacks.hana.hpp#construct-runtime'></code></pre>
-
-----
-
-### Then, overload `trigger`!
-
-<pre><code class='sample' sample='code/callbacks.hana.hpp#trigger-runtime'></code></pre>
-
-Note:
-This is what I meant by "Seamless integration of compile-time and runtime"
-
-----
-
-### And what about performance?
-
-<iframe width="800" height="400" src="benchmark/callbacks.extensible.html" style="background-color: Snow;"></iframe>
-
-----
-
-### Hana shines when combining compile-time and runtime
 
 ====================
 

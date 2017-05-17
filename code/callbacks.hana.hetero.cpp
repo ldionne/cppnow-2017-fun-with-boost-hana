@@ -22,7 +22,7 @@ struct event {
 };
 
 template <typename CharT, CharT ...c>
-constexpr event<c...> operator""_event() {
+constexpr event<c...> operator""_e() {
   return {};
 }
 // end-sample
@@ -59,7 +59,9 @@ struct event_system;
 
 template <typename ...Events, typename ...Signatures>
 struct event_system<hana::pair<Events, hana::basic_type<Signatures>>...> {
-  hana::map<hana::pair<Events, std::vector<std::function<Signatures>>>...> map_;
+  hana::map<
+    hana::pair<Events, std::vector<std::function<Signatures>>>...
+  > map_;
 // end-sample
 
 // sample(on)
@@ -94,24 +96,26 @@ event_system<Events...> make_event_system(Events ...events) {
 // end-sample
 
 
+using std::cout;
+using std::string;
+
 // sample(usage)
 int main() {
   auto events = make_event_system(
-    "foo"_event = function<void(std::string)>,
-    "bar"_event = function<void(int)>,
-    "baz"_event = function<void(double)>
+    "foo"_e = function<void(string)>,
+    "bar"_e = function<void(int)>,
+    "baz"_e = function<void(double)>
   );
 
-  events.on("foo"_event, [](std::string s) { std::cout << "foo triggered with '" << s << "'!\n"; });
-  events.on("foo"_event, [](std::string s) { std::cout << "foo with '" << s << "' again!\n"; });
-  events.on("bar"_event, [](int i) { std::cout << "bar triggered with '" << i << "'!\n"; });
-  events.on("baz"_event, [](double d) { std::cout << "baz triggered with '" << d << "'!\n"; });
-  // events.on("unknown"_event, []() { }); // compiler error!
+  events.on("foo"_e, [](string s) { cout << "foo with '" << s << "'!\n"; });
+  events.on("foo"_e, [](string s) { cout << "foo with '" << s << "' again!\n"; });
+  events.on("bar"_e, [](int i) { cout << "bar with '" << i << "'!\n"; });
+  events.on("baz"_e, [](double d) { cout << "baz with '" << d << "'!\n"; });
+  // events.on("unknown"_e, []() { }); // compiler error!
 
-  events.trigger("foo"_event, "hello"); // no overhead for event lookup
-  events.trigger("bar"_event, 4);
-  events.trigger("baz"_event, 3.3);
-  // events.trigger("unknown"_event); // compiler error!
+  events.trigger("foo"_e, "hello"); // no overhead for event lookup
+  events.trigger("bar"_e, 4);
+  events.trigger("baz"_e, 3.3);
+  // events.trigger("unknown"_e); // compiler error!
 }
 // end-sample
-
