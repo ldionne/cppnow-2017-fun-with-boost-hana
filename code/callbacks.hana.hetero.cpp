@@ -101,11 +101,13 @@ using std::string;
 
 // sample(usage)
 int main() {
+// end-sample sample(usage) sample(make_event_system)
   auto events = make_event_system(
     "foo"_e = function<void(string)>,
     "bar"_e = function<void(int)>,
     "baz"_e = function<void(double)>
   );
+// end-sample sample(usage)
 
   events.on("foo"_e, [](string s) { cout << "foo with '" << s << "'!\n"; });
   events.on("foo"_e, [](string s) { cout << "foo with '" << s << "' again!\n"; });
